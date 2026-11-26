@@ -1,0 +1,42 @@
+# Builds Ringan API desktop installers for Windows and macOS.
+# Trigger manually (Actions tab -> "Desktop build" -> Run workflow) or by pushing a tag like v1.0.0.
+# Installers are uploaded as workflow artifacts. Builds are unsigned unless signing secrets are configured.
+name: Desktop build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+          - os: macos-latest
+            script: dist:mac
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node test/smoke.js
+      - run: npm run ${{ matrix.script }}
+        env:
+          # Prevents electron-builder from trying to publish releases.
+          GH_TOKEN: ''
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ringan-api-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error

@@ -1,0 +1,73 @@
+{
+  "name": "ringan-api",
+  "productName": "Ringan API",
+  "version": "1.0.0",
+  "description": "API client lokal yang ringan, tanpa login. Kompatibel dengan koleksi Bruno, Postman v2.x, OpenAPI, dan cURL.",
+  "author": "Ringan API",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "node server.js",
+    "desktop": "electron .",
+    "test": "node test/smoke.js",
+    "icon": "electron scripts/make-icon.js",
+    "dist:win": "electron-builder --win nsis portable --x64",
+    "dist:mac": "electron-builder --mac dmg zip --x64 --arm64",
+    "dist:linux": "electron-builder --linux AppImage",
+    "cli": "node bin/ringan.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^45.5.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "id.ringan.api",
+    "productName": "Ringan API",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**",
+      "lib/**",
+      "public/**",
+      "server.js",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "build/icon.png",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Ringan API",
+      "artifactName": "RinganAPI-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "RinganAPI-Portable-${version}.${ext}"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "artifactName": "RinganAPI-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Development"
+    }
+  },
+  "bin": {
+    "ringan": "bin/ringan.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0"
+  }
+}

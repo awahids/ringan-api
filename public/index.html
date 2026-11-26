@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="ringan-token" content="__RINGAN_TOKEN__">
+  <title>Ringan API</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sb-head">
+        <div class="brand"><span class="logo">R</span>Ringan <b>API</b></div>
+        <div class="sb-actions">
+          <button class="btn sm" id="btnImport" title="Import collection (link, file, cURL)">Import</button>
+          <button class="btn sm icon" id="btnNewCol" title="Koleksi baru">+</button>
+        </div>
+      </div>
+      <div class="sb-side" id="sideTabs"></div>
+      <div class="sb-search"><input id="sbFilter" type="search" placeholder="Cari request…" spellcheck="false"></div>
+      <div id="tree"></div>
+      <div class="sb-foot">
+        <span id="saveStatus" class="muted"></span>
+        <button class="btn sm ghost" id="btnSettings" title="Pengaturan">Pengaturan</button>
+      </div>
+    </aside>
+    <div id="resizer" title="Geser untuk mengubah lebar"></div>
+    <main id="main"></main>
+  </div>
+  <div id="menuRoot"></div>
+  <div id="modalRoot"></div>
+  <div id="toasts"></div>
+  <script src="/engine.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
