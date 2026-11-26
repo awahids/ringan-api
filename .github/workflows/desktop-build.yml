@@ -29,8 +29,7 @@ jobs:
       - run: node test/smoke.js
       - run: npm run ${{ matrix.script }}
         env:
-          # Prevents electron-builder from trying to publish releases.
-          GH_TOKEN: ''
+          # Unsigned build; installers are uploaded as workflow artifacts (scripts use --publish never).
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: actions/upload-artifact@v4
         with:
