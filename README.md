@@ -15,8 +15,22 @@ Semua data tersimpan di `data/store.json` di komputer Anda.
 | macOS | Apple Silicon (M1/M2/M3/M4) | [RinganAPI-1.1.0-arm64.dmg](https://github.com/awahids/ringan-api/releases/download/v1.1.0/RinganAPI-1.1.0-arm64.dmg) |
 | macOS | Intel | [RinganAPI-1.1.0-x64.dmg](https://github.com/awahids/ringan-api/releases/download/v1.1.0/RinganAPI-1.1.0-x64.dmg) |
 
-Arsip .zip untuk macOS juga tersedia di [halaman rilis](https://github.com/awahids/ringan-api/releases/tag/v1.1.0). Installer belum ditandatangani: di Windows pilih *More info → Run anyway* saat SmartScreen muncul; di macOS buka pertama kali lewat klik kanan → *Open*.
+Arsip .zip untuk macOS juga tersedia di [halaman rilis](https://github.com/awahids/ringan-api/releases/tag/v1.1.0). Installer belum ditandatangani sertifikat developer: di Windows pilih *More info → Run anyway* saat SmartScreen muncul; di macOS lihat [cara membuka pertama kali](https://github.com/awahids/ringan-api#membuka-di-macos-pertama-kali).
 <!-- download:end -->
+
+### Membuka di macOS pertama kali
+
+Ringan API belum ditandatangani dengan sertifikat Apple Developer, jadi macOS menahannya saat pertama dibuka:
+
+1. Buka file `.dmg`, seret **Ringan API** ke folder **Applications**.
+2. Di Finder buka **Applications**, **klik kanan** (atau Control-klik) **Ringan API → Open**, lalu pilih **Open** di dialog yang muncul.
+3. Di macOS 15 (Sequoia) atau lebih baru, jika tidak ada tombol Open: coba buka sekali, lalu masuk **System Settings → Privacy & Security**, gulir ke bawah, klik **Open Anyway** untuk Ringan API, dan konfirmasi dengan password Mac.
+
+Ini cukup dilakukan sekali. Jika muncul pesan **"Ringan API is damaged and can't be opened"** (biasanya pada versi 1.1.0 ke bawah, atau file yang ditandai karantina oleh browser), jalankan di Terminal lalu buka lagi:
+
+```bash
+xattr -cr "/Applications/Ringan API.app"
+```
 
 ## Aplikasi desktop (Electron)
 

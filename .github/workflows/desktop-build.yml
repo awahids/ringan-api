@@ -39,6 +39,21 @@ jobs:
         env:
           # Unsigned build; installers are uploaded as workflow artifacts (scripts use --publish never).
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # macOS: the app must carry a valid (ad-hoc) signature, otherwise Apple Silicon Macs report it as "damaged".
+      - name: Verify macOS signature and launch the app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -e
+          for app in "dist/mac-arm64/Ringan API.app" "dist/mac/Ringan API.app"; do
+            echo "== $app"
+            codesign --verify --deep --strict --verbose=2 "$app"
+            codesign -dv "$app" 2>&1 | grep -E "Signature|Identifier|Format" || true
+          done
+          # Launch the native (arm64) build headless and run the built-in smoke test.
+          RINGAN_SMOKE=1 RINGAN_DATA="$RUNNER_TEMP/ringan-smoke" PORT=4999 \
+            "dist/mac-arm64/Ringan API.app/Contents/MacOS/Ringan API" 2>&1 | tee smoke.log
+          grep -q "SMOKE OK" smoke.log
       - uses: actions/upload-artifact@v4
         with:
           name: ringan-api-${{ matrix.os }}

@@ -7,6 +7,13 @@ Bagian **[Unreleased]** berisi perubahan yang sudah ada di kode tapi belum diril
 
 ## [Unreleased]
 
+### Diperbaiki
+- Aplikasi macOS tidak bisa dibuka setelah diinstal (di Apple Silicon muncul pesan "rusak/damaged"). Aplikasi kini ditandatangani ad-hoc sehingga bisa dibuka lewat klik kanan → Open atau System Settings → Privacy & Security → Open Anyway.
+
+### Ditambahkan
+- Link unduhan installer di README dan di catatan GitHub Release, beserta panduan membuka aplikasi di macOS pertama kali.
+- Build CI memverifikasi tanda tangan aplikasi macOS dan menjalankannya sebelum dirilis.
+
 ## [1.1.0] - 2026-11-26
 
 ### Ditambahkan

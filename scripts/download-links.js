@@ -29,7 +29,7 @@ function table(version) {
     '|---|---|---|',
     ...rows.map(([os, kind, file]) => `| ${os} | ${kind} | [${file}](${base}/${file}) |`),
     '',
-    `Arsip .zip untuk macOS juga tersedia di [halaman rilis](https://github.com/${REPO}/releases/tag/v${v}). Installer belum ditandatangani: di Windows pilih *More info → Run anyway* saat SmartScreen muncul; di macOS buka pertama kali lewat klik kanan → *Open*.`,
+    `Arsip .zip untuk macOS juga tersedia di [halaman rilis](https://github.com/${REPO}/releases/tag/v${v}). Installer belum ditandatangani sertifikat developer: di Windows pilih *More info → Run anyway* saat SmartScreen muncul; di macOS lihat [cara membuka pertama kali](https://github.com/${REPO}#membuka-di-macos-pertama-kali).`,
   ].join('\n');
 }
 

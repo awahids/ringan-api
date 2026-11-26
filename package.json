@@ -58,8 +58,10 @@
     "mac": {
       "icon": "build/icon.png",
       "category": "public.app-category.developer-tools",
-      "identity": null,
-      "artifactName": "RinganAPI-${version}-${arch}.${ext}"
+      "identity": "-",
+      "artifactName": "RinganAPI-${version}-${arch}.${ext}",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "linux": {
       "icon": "build/icon.png",
