@@ -7,6 +7,8 @@ Bagian **[Unreleased]** berisi perubahan yang sudah ada di kode tapi belum diril
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-26
+
 ### Diperbaiki
 - Aplikasi macOS tidak bisa dibuka setelah diinstal (di Apple Silicon muncul pesan "rusak/damaged"). Aplikasi kini ditandatangani ad-hoc sehingga bisa dibuka lewat klik kanan → Open atau System Settings → Privacy & Security → Open Anyway.
 
@@ -48,6 +50,7 @@ Rilis pertama.
 - CLI runner (`ringan run`, `ringan export`) dengan laporan JUnit/HTML/JSON untuk CI.
 - Aplikasi desktop Electron untuk Windows dan macOS; API key AI dienkripsi dengan keychain OS.
 
-[Unreleased]: https://github.com/awahids/ringan-api/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/awahids/ringan-api/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/awahids/ringan-api/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/awahids/ringan-api/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/awahids/ringan-api/releases/tag/v1.0.0
