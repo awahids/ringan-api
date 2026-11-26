@@ -460,7 +460,10 @@
     }, h('span', { class: 'mbadge m-' + it.method.toLowerCase() }, short), h('span', { class: 'name' }, it.name), dot, h('button', { class: 'more', title: 'Menu', onclick: (e) => { e.stopPropagation(); reqMenu(it, col, e); } }, '⋯'));
   }
 
+  const isNarrow = () => window.matchMedia('(max-width: 820px)').matches;
+  const setDrawer = (open) => document.body.classList.toggle('sb-open', !!open);
   function select(id, tab) {
+    if (isNarrow()) setDrawer(false);
     ui.sel = id;
     if (id && !ui.tabs.includes(id)) {
       // Open next to the active tab, like a browser.
@@ -2362,6 +2365,10 @@
     setStatus('Tersimpan');
 
     $('#btnImport').onclick = () => openImport();
+    $('#btnImportM').onclick = () => openImport();
+    $('#btnMenu').onclick = () => setDrawer(!document.body.classList.contains('sb-open'));
+    $('#sbBackdrop').onclick = () => setDrawer(false);
+    window.addEventListener('resize', () => { if (!isNarrow()) setDrawer(false); });
     $('#btnNewCol').onclick = (e) => menu(e, [
       { label: 'Koleksi baru', onClick: newCollection },
       { label: 'Hubungkan ke project API (live)…', onClick: openConnectProject },
@@ -2374,7 +2381,7 @@
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); send(); }
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); doSave(); }
-      if (e.key === 'Escape') closeMenu();
+      if (e.key === 'Escape') { closeMenu(); setDrawer(false); }
       if ((e.ctrlKey || e.metaKey) && (e.key === 'w' || e.key === 'W') && ui.sel) { e.preventDefault(); closeTab(ui.sel); }
       if (e.ctrlKey && e.key === 'Tab' && ui.tabs.length > 1) {
         e.preventDefault();
