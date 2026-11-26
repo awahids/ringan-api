@@ -292,7 +292,91 @@
     }
   }
 
+  // ---------------------------------------------------------------- scenarios (no-code multi-step tests)
+  function getPath(obj, path) {
+    if (path == null || String(path).trim() === '' || path === '$') return obj;
+    const parts = [];
+    String(path).replace(/^\$\.?/, '').replace(/\[(\d+|"[^"]*"|'[^']*')\]|[^.[\]]+/g, (m, br) => { parts.push(br != null ? (/^\d+$/.test(br) ? Number(br) : br.slice(1, -1)) : m); return m; });
+    let cur = obj;
+    for (const p of parts) { if (cur == null) return undefined; cur = cur[p]; }
+    return cur;
+  }
+  /** "200", "2xx", "200,201,204" -> does status match? Empty = no expectation. */
+  function statusMatches(expect, status) {
+    const e = String(expect || '').trim();
+    if (!e) return true;
+    return e.split(/[\s,]+/).filter(Boolean).some((p) => (/^\dxx$/i.test(p) ? String(status)[0] === p[0] : Number(p) === Number(status)));
+  }
+  function extractValue(ex, resp) {
+    if (!resp) return undefined;
+    if (ex.from === 'status') return resp.status;
+    if (ex.from === 'header') {
+      const k = Object.keys(resp.headers || {}).find((x) => x.toLowerCase() === String(ex.path || '').toLowerCase());
+      const v = k ? resp.headers[k] : undefined;
+      return Array.isArray(v) ? v.join(', ') : v;
+    }
+    let body = resp.bodyText;
+    try { body = JSON.parse(resp.bodyText); } catch {}
+    return getPath(body, ex.path);
+  }
+
+  /**
+   * Runs a scenario: steps run in order, each step's extracted values become variables for the next steps.
+   * hooks: { onStep(index, stepResult), shouldStop() }. Returns { ok, steps: [stepResult], durationMs }.
+   */
+  async function runScenario(scn, col, ctx, hooks = {}) {
+    const index = new Map();
+    eachRequest(col.items, (it, anc) => index.set(it.id, { item: it, anc }));
+    const env = activeEnv(col);
+    const out = [];
+    const t0 = Date.now();
+    let allOk = true;
+    for (let i = 0; i < (scn.steps || []).length; i++) {
+      const step = scn.steps[i];
+      if (hooks.shouldStop && hooks.shouldStop()) break;
+      if (step.enabled === false) { const sr = { step, skipped: true, ok: true }; out.push(sr); if (hooks.onStep) hooks.onStep(i, sr); continue; }
+      const found = index.get(step.reqId);
+      if (!found) {
+        const sr = { step, ok: false, result: { error: 'Request untuk langkah ini tidak ditemukan (mungkin sudah dihapus).', tests: [], logs: [] }, extracted: [] };
+        out.push(sr); allOk = false; if (hooks.onStep) hooks.onStep(i, sr);
+        if (scn.stopOnFail !== false) break; else continue;
+      }
+      if (step.delayMs > 0) await new Promise((r) => setTimeout(r, Number(step.delayMs)));
+      let r;
+      try { r = await execute(found.item, col, found.anc, ctx); } catch (e) { r = { error: e.message, tests: [], logs: [] }; }
+      r.tests = r.tests || [];
+      if (r.response && String(step.expectStatus || '').trim()) {
+        const pass = statusMatches(step.expectStatus, r.response.status);
+        r.tests.unshift({ name: `Status ${r.response.status} sesuai harapan (${step.expectStatus})`, passed: pass, error: pass ? undefined : `harapan ${step.expectStatus}, dapat ${r.response.status}`, kind: 'scenario' });
+      }
+      const extracted = [];
+      for (const ex of step.extract || []) {
+        if (!ex.var) continue;
+        const v = r.response ? extractValue(ex, r.response) : undefined;
+        const okEx = v !== undefined;
+        extracted.push({ var: ex.var, from: ex.from || 'body', path: ex.path, value: v, ok: okEx, scope: ex.scope || 'runtime' });
+        if (!okEx) { r.tests.push({ name: `Ambil ${ex.from || 'body'} ${ex.path || ''} → {{${ex.var}}}`, passed: false, error: 'nilai tidak ditemukan di response', kind: 'scenario' }); continue; }
+        const store = (ctx.runtime[col.id] = ctx.runtime[col.id] || {});
+        store[ex.var] = v;
+        if (ex.scope === 'env' && env) {
+          const str = typeof v === 'string' ? v : JSON.stringify(v);
+          const row = env.vars.find((x) => x.key === ex.var);
+          if (row) { row.value = str; row.enabled = true; } else env.vars.push(kv(ex.var, str));
+          if (ctx.onDirty) ctx.onDirty();
+        }
+      }
+      const ok = resultOk(r);
+      if (!ok) allOk = false;
+      const sr = { step, item: found.item, result: r, extracted, ok };
+      out.push(sr);
+      if (hooks.onStep) hooks.onStep(i, sr);
+      if (!ok && scn.stopOnFail !== false) break;
+    }
+    return { ok: allOk && out.length > 0, steps: out, durationMs: Date.now() - t0 };
+  }
+
   return {
+    getPath, statusMatches, runScenario,
     uid, clone, kv, on, kvObj, eachRequest, activeEnv, mergedVars, varState, resolveAuth, mergedHeaders,
     splitUrl, syncPathParams, syncParamsFromUrl, syncUrlFromParams, interpolate, finalizeUrl, scriptBody,
     buildWire, applyVarChanges, execute, resultOk, runList, runAll,

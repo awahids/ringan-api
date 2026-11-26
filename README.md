@@ -101,13 +101,21 @@ Build belum ditandatangani: di macOS buka pertama kali lewat klik kanan → *Ope
   - Provider: **Anthropic Claude** (default `claude-opus-5-5`, lewat SDK resmi `@anthropic-ai/sdk`, refusal fallback server-side aktif), **OpenAI**, **Google Gemini**, **Ollama** (lokal, gratis), **OpenRouter**, **Groq**, **DeepSeek**, dan server **OpenAI-compatible** apa pun (LM Studio, vLLM, LiteLLM). Atur di **Pengaturan → Pengaturan AI** ("Ambil daftar model" mengambil model terbaru langsung dari provider).
   - Jawaban **di-stream** (muncul bertahap saat AI menulis) untuk semua provider, dengan tombol **Stop** untuk menghentikan; jawaban yang sudah keluar tetap tersimpan.
   - Aksi cepat: *Buat test & assertion* (langsung bisa ditambahkan), *Jelaskan response / error*, *Buat data uji* (variasi valid & negatif → satu klik jadi request dengan assertion status), *Review keamanan & kualitas*, dan tanya bebas.
+  - Hanya menjawab sesuai konteks request/koleksi yang sedang dibuka; pertanyaan di luar konteks tidak diproses.
   - Privasi: header Authorization/Cookie, field token/password/secret, dan variabel secret **selalu disamarkan** sebelum dikirim; isi yang dikirim bisa dilihat di "Data yang dikirim ke AI". API key disimpan lokal, terenkripsi keychain OS di versi desktop, dan tidak pernah dikirim ke halaman.
+- **Skenario tanpa kode**: tab **Skenario** di koleksi. Susun langkah (request) dengan seret-lepas, tentukan status yang diharapkan (`200`, `2xx`, `200,201`), dan ambil nilai dari body/header/status menjadi `{{variabel}}` untuk langkah berikutnya, mis. login → simpan token → buat data → ambil ID → hapus. Tersimpan di folder `.bru` sebagai `ringan-scenarios.json` dan bisa dijalankan dari CLI (`--scenario`).
+- **Template koleksi** (**+ → Koleksi baru / template…**): CRUD REST, Login → token → endpoint terproteksi, dan smoke test project sendiri. **Tur singkat** muncul saat pertama kali dibuka.
+- **Tampilan berdampingan & bandingkan**: klik kanan tab → **Buka berdampingan**, lalu **Bandingkan response** (status, header, body per path; atau struktur saja).
+- **Highlight variabel**: `{{variabel}}` hijau jika ada nilainya, merah jika belum; arahkan kursor untuk melihat nilainya.
+- **Status bar & notifikasi desktop**: environment, status request terakhir, test, AI; notifikasi saat Runner/skenario/request lama selesai ketika jendela tidak aktif.
+- **Bahasa**: Indonesia atau Inggris (**Pengaturan → Bahasa tampilan**).
 - **Runner**: jalankan semua request di koleksi/folder berurutan, ringkasan lulus/gagal, jeda antar request, berhenti saat gagal, `bru.setNextRequest()`.
-- **Response viewer**: status, waktu, ukuran, JSON pretty + filter path, headers, hasil test, timeline (request yang benar-benar dikirim + console log script).
+- **Response viewer**: status, waktu, ukuran, JSON Pretty / **Tree** (klik untuk menyalin path atau nilai) / **Tabel** (urut & cari) / Raw + filter path, preview gambar, PDF, dan HTML, headers, hasil test, timeline (request yang benar-benar dikirim + console log script).
 - **Export** koleksi (menu koleksi → **Export…**, atau CLI `ringan export`) ke:
   - **Postman Collection v2.1**: folder, request, body, auth, variabel (+ environment aktif). Assertion diubah menjadi `pm.test`, script `bru.*`/`res.*` diberi shim agar tetap jalan di Postman/Newman.
   - **OpenAPI 3 (JSON/YAML)**: server dari `{{baseUrl}}`, path params (`/:id` → `/{id}`), query/header params, request body + schema hasil inferensi, auth → `securitySchemes`, schema response dari tab Schema (atau dari response terakhir). Request dengan path+method sama digabung sebagai `examples`.
   - **Bruno JSON**: format lengkap termasuk script & environment.
+  - **Dokumentasi HTML**: satu file HTML siap dibagikan berisi daftar endpoint, parameter, body, contoh cURL, contoh response (dari response terakhir), dan skenario.
 
   Nilai secret tidak pernah ikut di-export. Copy as cURL per request.
 
@@ -125,6 +133,7 @@ node bin/ringan.js list
 | `-e, --env <nama>` | Environment yang dipakai |
 | `--env-var key=value` | Set/override variabel (boleh berulang), mis. token dari secret CI |
 | `-f, --folder <path>` | Hanya folder tertentu, mis. `"Users/Admin"` |
+| `-s, --scenario <nama>` | Jalankan skenario yang dibuat di aplikasi |
 | `-r, --reporter cli,junit,html,json` | Format laporan; `-o <dir>` lokasi laporan (default `./ringan-reports`) |
 | `--bail`, `--delay <ms>`, `--timeout <ms>`, `--insecure` | Berhenti saat gagal, jeda, timeout, abaikan TLS |
 
@@ -135,7 +144,7 @@ node bin/ringan.js export ./api-tests -t openapi-yaml -o openapi.yaml
 node bin/ringan.js export "Nama Koleksi" -t postman -o ./exports
 ```
 
-Format: `postman`, `openapi`, `openapi-yaml`, `bruno`.
+Format: `postman`, `openapi`, `openapi-yaml`, `bruno`, `html` (dokumentasi).
 
 Exit code `0` jika semua lulus, `1` jika ada yang gagal, jadi pipeline otomatis merah. Contoh GitHub Actions:
 

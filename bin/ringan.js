@@ -26,7 +26,7 @@ const HELP = `Ringan API CLI ${VERSION}
 
 Pemakaian:
   ringan run <sumber> [opsi]     Jalankan semua request dalam koleksi
-  ringan export <sumber> [opsi]  Export koleksi ke Postman / OpenAPI 3 / Bruno JSON
+  ringan export <sumber> [opsi]  Export koleksi ke Postman / OpenAPI 3 / Bruno JSON / dokumentasi HTML
   ringan list                    Tampilkan koleksi yang tersimpan di aplikasi
 
 <sumber>: folder koleksi Bruno, file JSON/YAML/.bru, link, atau nama koleksi di aplikasi.
@@ -35,6 +35,7 @@ Opsi run:
   -e, --env <nama>               Environment yang dipakai
       --env-var <key=value>      Set/override variabel environment (boleh berulang)
   -f, --folder <path>            Hanya jalankan folder tertentu, mis. "Users/Admin"
+  -s, --scenario <nama>          Jalankan skenario (alur berurutan) yang dibuat di aplikasi
   -r, --reporter <list>          cli,json,junit,html (default: cli). Boleh dipisah koma
   -o, --output <dir>             Folder laporan (default: ./ringan-reports)
       --bail                     Berhenti di request pertama yang gagal
@@ -47,13 +48,15 @@ Opsi run:
   -q, --quiet                    Hanya tampilkan ringkasan
 
 Opsi export:
-  -t, --format <f>               postman | openapi | openapi-yaml | bruno (default: postman)
+  -t, --format <f>               postman | openapi | openapi-yaml | bruno | html (default: postman)
   -o, --output <file|dir>        File tujuan, atau folder (nama file otomatis). Default: folder saat ini
   -e, --env <nama>               Environment untuk nilai server/contoh (OpenAPI) atau variabel (Postman)
 
 Contoh:
+  ringan run ./api-tests -e dev --scenario "Login lalu buat order"
   ringan export ./api-tests -t openapi-yaml -o openapi.yaml
   ringan export "Nama Koleksi" -t postman -o ./exports
+  ringan export ./api-tests -t html -o docs.html
 
 Exit code: 0 jika semua lulus, 1 jika ada yang gagal, 2 jika error pemakaian.
 `;
@@ -70,6 +73,7 @@ function parseArgs(argv) {
       case '-e': case '--env': o.env = next(); break;
       case '--env-var': o.envVars.push(next()); break;
       case '-f': case '--folder': o.folder = next(); break;
+      case '-s': case '--scenario': o.scenario = next(); break;
       case '-r': case '--reporter': o.reporters = String(next()).split(',').map((s) => s.trim()).filter(Boolean); break;
       case '-o': case '--output': o.output = next(); break;
       case '--bail': o.bail = true; break;
@@ -178,28 +182,34 @@ async function runCollection(col, opts, sandbox) {
     }
   }
   const env = E.activeEnv(col);
-  const folder = opts.folder ? findFolder(col, opts.folder) : null;
-  const list = E.runList(col, folder);
+  let scn = null;
+  if (opts.scenario) {
+    const all = col.scenarios || [];
+    scn = all.find((x) => x.name.toLowerCase() === opts.scenario.toLowerCase());
+    if (!scn) throw new Error(`Skenario "${opts.scenario}" tidak ada di koleksi "${col.name}". Tersedia: ${all.map((x) => x.name).join(', ') || '(belum ada skenario)'}`);
+  }
+  const folder = opts.folder && !scn ? findFolder(col, opts.folder) : null;
+  const list = scn ? [] : E.runList(col, folder);
   const ctx = {
     send: (payload) => sendHttp(payload, {}).catch((e) => ({ error: e.message })),
     sandbox: (job) => sandbox.run(job),
     settings: { timeoutMs: opts.timeout || 30000, verifyTls: !opts.insecure, followRedirects: !opts.noRedirect },
     runtime: {},
   };
-  const summary = { collection: col.name, env: env ? env.name : null, startedAt: new Date().toISOString(), durationMs: 0, results: [] };
+  const summary = { collection: scn ? `${col.name} — ${scn.name}` : col.name, env: env ? env.name : null, startedAt: new Date().toISOString(), durationMs: 0, results: [] };
   const t0 = Date.now();
-  if (!opts.quiet) console.log(`\n${C.b(col.name)}${env ? C.d(`  [env: ${env.name}]`) : ''}${folder ? C.d(`  [folder: ${opts.folder}]`) : ''}  ${C.d(`${list.length} request`)}\n`);
+  const head = scn ? C.d(`  [skenario: ${scn.name}]  ${scn.steps.length} langkah`) : `${folder ? C.d(`  [folder: ${opts.folder}]`) : ''}  ${C.d(`${list.length} request`)}`;
+  if (!opts.quiet) console.log(`\n${C.b(col.name)}${env ? C.d(`  [env: ${env.name}]`) : ''}${head}\n`);
 
-  await E.runAll(list, col, ctx, {
-    delayMs: opts.delay || 0,
-    bail: !!opts.bail,
-    onResult: (i, entry, r) => {
+  const ancOf = new Map();
+  E.eachRequest(col.items || [], (it, anc) => ancOf.set(it.id, anc));
+  const onResult = (item, anc, r) => {
       const ok = E.resultOk(r);
       const rec = {
-        name: entry.item.name,
-        path: entry.anc.map((a) => a.name),
-        method: entry.item.method,
-        url: r.request ? r.request.url : entry.item.url,
+        name: item.name,
+        path: anc.map((a) => a.name),
+        method: item.method,
+        url: r.request ? r.request.url : item.url,
         status: r.response ? r.response.status : null,
         timeMs: r.response ? r.response.timeMs : null,
         ok: !!ok,
@@ -220,8 +230,21 @@ async function runCollection(col, opts, sandbox) {
       if (rec.scriptError) console.log(C.r(`      ${rec.scriptError}`));
       if (rec.unresolved.length) console.log(C.y(`      variabel tidak ditemukan: ${rec.unresolved.join(', ')}`));
       for (const x of rec.tests) if (!x.passed) console.log(C.r(`      ✗ ${x.name}`) + (x.error ? C.d(`\n        ${String(x.error).replace(/\n/g, '\n        ')}`) : ''));
-    },
-  });
+      if (!opts.quiet && r.extracted) for (const x of r.extracted) console.log(x.ok ? C.d(`      → {{${x.var}}} = ${JSON.stringify(x.value).slice(0, 80)}`) : C.r(`      ✗ {{${x.var}}} tidak ditemukan (${x.from} ${x.path || ''})`));
+  };
+  if (scn) {
+    await E.runScenario(scn, col, ctx, {
+      onStep: (i, sr) => {
+        const item = sr.item || (ancOf.has(sr.step.reqId) ? null : { name: `Langkah ${i + 1} (request tidak ditemukan)`, method: '?', url: '' });
+        let real = item;
+        if (!real) E.eachRequest(col.items || [], (it) => { if (it.id === sr.step.reqId) real = it; });
+        const r = sr.skipped ? { skipped: true, tests: [], logs: [] } : Object.assign(sr.result || {}, { extracted: sr.extracted });
+        onResult(real, ancOf.get(sr.step.reqId) || [], r);
+      },
+    });
+  } else {
+    await E.runAll(list, col, ctx, { delayMs: opts.delay || 0, bail: !!opts.bail, onResult: (i, entry, r) => onResult(entry.item, entry.anc, r) });
+  }
   summary.durationMs = Date.now() - t0;
   return summary;
 }

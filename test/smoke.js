@@ -437,5 +437,84 @@ const ok = (name, fn) => Promise.resolve().then(fn).then(
     assert.ok(/tidak didefinisikan/.test(undocumented.tests[0].error));
   });
 
+  await ok('scenario: steps run in order, values flow between steps', async () => {
+    const E = require('../public/engine');
+    const login = { id: 'l', type: 'request', name: 'Login', method: 'POST', url: 'http://api/login', params: [], pathParams: [], headers: [], body: { mode: 'none', content: '', form: [] }, auth: { type: 'none' }, vars: [], asserts: [], preScript: '', postScript: '', tests: '' };
+    const me = { ...JSON.parse(JSON.stringify(login)), id: 'm', name: 'Me', method: 'GET', url: 'http://api/me?t={{token}}' };
+    const col = { id: 'c', name: 'C', items: [login, me], headers: [], auth: { type: 'none' }, vars: [], environments: [], preScript: '', postScript: '', tests: '' };
+    const sent = [];
+    const ctx = {
+      runtime: {}, settings: {},
+      send: async (p) => { sent.push(p.url); return p.url.endsWith('/login') ? { status: 201, statusText: 'Created', headers: { 'x-req': 'abc' }, bodyText: '{"data":{"token":"T1"}}', timeMs: 1, size: 1, url: p.url } : { status: 200, statusText: 'OK', headers: {}, bodyText: '{}', timeMs: 1, size: 1, url: p.url }; },
+      sandbox: async () => ({ tests: [], logs: [], vars: { runtime: {}, envSet: {}, envUnset: [] }, error: null }),
+    };
+    assert.ok(E.statusMatches('2xx', 201) && E.statusMatches('200,201', 201) && !E.statusMatches('200', 404));
+    assert.strictEqual(E.getPath({ a: [{ b: 7 }] }, 'a[0].b'), 7);
+    const scn = { id: 's', name: 'S', stopOnFail: true, steps: [
+      { id: '1', reqId: 'l', expectStatus: '201', extract: [{ from: 'body', path: 'data.token', var: 'token', scope: 'runtime' }, { from: 'header', path: 'X-Req', var: 'rid' }] },
+      { id: '2', reqId: 'm', expectStatus: '2xx', extract: [] },
+    ] };
+    const out = await E.runScenario(scn, col, ctx);
+    assert.ok(out.ok, JSON.stringify(out.steps.map((s) => s.result && s.result.tests)));
+    assert.strictEqual(sent[1], 'http://api/me?t=T1', 'extracted value used by the next step');
+    assert.strictEqual(ctx.runtime.c.rid, 'abc');
+    scn.steps[0].expectStatus = '200';
+    const failed = await E.runScenario(scn, col, ctx);
+    assert.ok(!failed.ok && failed.steps.length === 1, 'stops at the failing step');
+  });
+
+  await ok('scenario: saved next to .bru files and read back by path', () => {
+    const fsSync = require('../lib/fs-sync');
+    const dir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ringan-scn-'));
+    try {
+      const col = imp.sampleCollection();
+      const [a, b] = col.items;
+      col.scenarios = [{ id: 's1', name: 'Alur', stopOnFail: true, steps: [{ id: 'x', reqId: a.id, expectStatus: '200', enabled: true, extract: [{ from: 'body', path: '[0].id', var: 'pid', scope: 'runtime' }] }, { id: 'y', reqId: b.id, enabled: true, extract: [] }] }];
+      col.fsPath = dir;
+      fsSync.writeCollectionDir(col);
+      const file = JSON.parse(fs.readFileSync(path.join(dir, 'ringan-scenarios.json'), 'utf8'));
+      assert.deepStrictEqual(file.scenarios[0].steps.map((s) => s.request), ['List posts.bru', 'Get post by id.bru']);
+      const fresh = fsSync.readCollectionDir(dir);
+      assert.ok(fresh.scenarios[0].steps.every((s) => s.reqId), 'requests resolved by path');
+      fsSync.mergeFromDisk(col, fresh);
+      assert.deepStrictEqual(col.scenarios[0].steps.map((s) => s.reqId), [a.id, b.id], 'ids preserved after merge');
+      col.scenarios = [];
+      fsSync.writeCollectionDir(col);
+      assert.ok(!fs.existsSync(path.join(dir, 'ringan-scenarios.json')), 'file removed when no scenarios remain');
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  await ok('export: HTML documentation masks secrets', () => {
+    const { exportCollection } = require('../lib/exporters');
+    const col = imp.sampleCollection();
+    col.environments[0].vars.push({ key: 'apiKey', value: 'SUPER-SECRET', enabled: true, secret: true });
+    col.items[0].headers = [{ key: 'Authorization', value: 'Bearer LITERAL-TOKEN', enabled: true }];
+    col.items[1].auth = { type: 'bearer', token: '{{token}}' };
+    const out = exportCollection(col, 'html', { samples: { [col.items[0].id]: { status: 200, body: '[{"id":1}]' } } });
+    assert.ok(out.filename.endsWith('.docs.html') && out.mime === 'text/html');
+    assert.ok(out.content.startsWith('<!doctype html>'));
+    for (const r of col.items) assert.ok(out.content.includes(r.name.replace(/&/g, '&amp;')), r.name);
+    assert.ok(!out.content.includes('SUPER-SECRET') && !out.content.includes('LITERAL-TOKEN'), 'secrets must not leak');
+    assert.ok(out.content.includes('{{token}}'), 'variable references are kept');
+    assert.ok(out.content.includes('curl -X POST'), 'cURL example');
+    assert.ok(out.content.includes('&quot;id&quot;: 1'), 'example response');
+  });
+
+  await ok('i18n: dictionary covers static UI strings', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'public', 'i18n.js'), 'utf8');
+    const win = {};
+    new Function('window', 'document', 'MutationObserver', 'NodeFilter', src)(win, { documentElement: {}, body: {} }, class { observe() {} disconnect() {} }, {});
+    const I = win.RinganI18n;
+    I.setLang('en');
+    assert.strictEqual(I.translate('  Batal '), '  Cancel ');
+    assert.strictEqual(I.translate('Skenario "A": lulus (2/2 langkah)'), 'Scenario "A": passed (2/2 steps)');
+    assert.strictEqual(I.translate('Nama request saya'), 'Nama request saya', 'unknown text left alone');
+    const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
+    for (const s of ['Pengaturan', 'Koleksi baru / template…', 'Hapus semua history', '▶ Jalankan skenario', 'Dokumentasi HTML', 'Bahasa tampilan']) {
+      assert.ok(app.includes(`'${s}'`), `"${s}" still used in app.js`);
+      assert.notStrictEqual(I.translate(s), s, `"${s}" has an English translation`);
+    }
+  });
+
   console.log(`\n${n} checks passed${process.exitCode ? ' (with failures)' : ''}`);
 })();

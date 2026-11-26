@@ -7,6 +7,23 @@ Bagian **[Unreleased]** berisi perubahan yang sudah ada di kode tapi belum diril
 
 ## [Unreleased]
 
+### Ditambahkan
+- **Skenario tanpa kode**: susun alur berurutan (mis. login → buat data → ambil → ubah → hapus) dengan seret-lepas, tentukan status yang diharapkan (`200`, `2xx`, `200,201`), dan ambil nilai dari body/header/status response menjadi `{{variabel}}` untuk langkah berikutnya. Skenario ikut tersimpan di folder `.bru` (`ringan-scenarios.json`) dan bisa dijalankan dari CLI: `ringan run <sumber> --scenario "<nama>"`.
+- **Tampilan response**: mode Tree (klik key menyalin path, klik nilai menyalin nilai) dan Tabel (urut, cari, untuk array of object), preview gambar, PDF, dan HTML, serta XML yang dirapikan.
+- **Highlight variabel** di URL dan tabel: hijau jika ada nilainya, merah jika belum ada; arahkan kursor untuk melihat nilainya (nilai secret disamarkan), plus pratinjau URL akhir.
+- **Tampilan berdampingan**: buka dua request sekaligus dan bandingkan response-nya (status, header, body JSON per path atau per baris; opsi bandingkan struktur saja).
+- **Status bar** (environment aktif, status/waktu/ukuran/test request terakhir, request yang sedang berjalan, provider AI) dan **notifikasi desktop** saat Runner, skenario, atau request lama selesai ketika jendela tidak aktif.
+- **Dokumentasi HTML otomatis**: export koleksi menjadi satu file HTML siap dibagikan (daftar endpoint, parameter, body, contoh cURL, contoh response, skenario, pencarian). Nilai rahasia disamarkan. Juga lewat CLI: `ringan export <sumber> -t html`.
+- **Template koleksi**: CRUD REST, Login → token → endpoint terproteksi, dan smoke test project sendiri, lengkap dengan assertion dan skenario.
+- **Tur singkat** saat pertama kali membuka aplikasi (bisa diulang dari Pengaturan).
+- **Bahasa tampilan Inggris/Indonesia** di Pengaturan; asisten AI ikut menjawab dalam bahasa yang dipilih.
+
+### Diubah
+- Asisten AI hanya menjawab sesuai konteks request/koleksi yang sedang dibuka (request, response, test, variabel) dan tidak mengarang data yang tidak ada. Pertanyaan di luar konteks tidak diproses: jawaban dihentikan seketika dan pertanyaan itu tidak ikut dikirim di percakapan berikutnya.
+
+### Diperbaiki
+- Menu klik kanan pada tab bisa error jika salah satu item menu tidak tersedia.
+
 ## [1.1.1] - 2026-11-26
 
 ### Diperbaiki

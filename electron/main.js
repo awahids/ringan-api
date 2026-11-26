@@ -91,7 +91,7 @@ function createWindow() {
     }
   });
   // Only clipboard access is needed by the page; deny camera, location, notifications, etc.
-  mainWindow.webContents.session.setPermissionRequestHandler((wc, permission, cb) => cb(permission === 'clipboard-sanitized-write' || permission === 'clipboard-read'));
+  mainWindow.webContents.session.setPermissionRequestHandler((wc, permission, cb) => cb(permission === 'clipboard-sanitized-write' || permission === 'clipboard-read' || permission === 'notifications'));
 
   mainWindow.once('ready-to-show', () => { if (!SMOKE) mainWindow.show(); });
   mainWindow.on('closed', () => { mainWindow = null; });
