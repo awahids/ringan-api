@@ -7,6 +7,8 @@ Bagian **[Unreleased]** berisi perubahan yang sudah ada di kode tapi belum diril
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-26
+
 ### Ditambahkan
 - **Skenario tanpa kode**: susun alur berurutan (mis. login → buat data → ambil → ubah → hapus) dengan seret-lepas, tentukan status yang diharapkan (`200`, `2xx`, `200,201`), dan ambil nilai dari body/header/status response menjadi `{{variabel}}` untuk langkah berikutnya. Skenario ikut tersimpan di folder `.bru` (`ringan-scenarios.json`) dan bisa dijalankan dari CLI: `ringan run <sumber> --scenario "<nama>"`.
 - **Tampilan response**: mode Tree (klik key menyalin path, klik nilai menyalin nilai) dan Tabel (urut, cari, untuk array of object), preview gambar, PDF, dan HTML, serta XML yang dirapikan.
@@ -67,7 +69,8 @@ Rilis pertama.
 - CLI runner (`ringan run`, `ringan export`) dengan laporan JUnit/HTML/JSON untuk CI.
 - Aplikasi desktop Electron untuk Windows dan macOS; API key AI dienkripsi dengan keychain OS.
 
-[Unreleased]: https://github.com/awahids/ringan-api/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/awahids/ringan-api/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/awahids/ringan-api/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/awahids/ringan-api/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/awahids/ringan-api/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/awahids/ringan-api/releases/tag/v1.0.0

@@ -6,16 +6,16 @@ Semua data tersimpan di `data/store.json` di komputer Anda.
 ## Unduh
 
 <!-- download:start -->
-**Versi terbaru: v1.1.1** · [catatan rilis](https://github.com/awahids/ringan-api/releases/tag/v1.1.1) · [semua versi](https://github.com/awahids/ringan-api/releases)
+**Versi terbaru: v1.2.0** · [catatan rilis](https://github.com/awahids/ringan-api/releases/tag/v1.2.0) · [semua versi](https://github.com/awahids/ringan-api/releases)
 
 | Sistem | Jenis | Unduh |
 |---|---|---|
-| Windows | Installer (disarankan) | [RinganAPI-Setup-1.1.1.exe](https://github.com/awahids/ringan-api/releases/download/v1.1.1/RinganAPI-Setup-1.1.1.exe) |
-| Windows | Portable, tanpa install | [RinganAPI-Portable-1.1.1.exe](https://github.com/awahids/ringan-api/releases/download/v1.1.1/RinganAPI-Portable-1.1.1.exe) |
-| macOS | Apple Silicon (M1/M2/M3/M4) | [RinganAPI-1.1.1-arm64.dmg](https://github.com/awahids/ringan-api/releases/download/v1.1.1/RinganAPI-1.1.1-arm64.dmg) |
-| macOS | Intel | [RinganAPI-1.1.1-x64.dmg](https://github.com/awahids/ringan-api/releases/download/v1.1.1/RinganAPI-1.1.1-x64.dmg) |
+| Windows | Installer (disarankan) | [RinganAPI-Setup-1.2.0.exe](https://github.com/awahids/ringan-api/releases/download/v1.2.0/RinganAPI-Setup-1.2.0.exe) |
+| Windows | Portable, tanpa install | [RinganAPI-Portable-1.2.0.exe](https://github.com/awahids/ringan-api/releases/download/v1.2.0/RinganAPI-Portable-1.2.0.exe) |
+| macOS | Apple Silicon (M1/M2/M3/M4) | [RinganAPI-1.2.0-arm64.dmg](https://github.com/awahids/ringan-api/releases/download/v1.2.0/RinganAPI-1.2.0-arm64.dmg) |
+| macOS | Intel | [RinganAPI-1.2.0-x64.dmg](https://github.com/awahids/ringan-api/releases/download/v1.2.0/RinganAPI-1.2.0-x64.dmg) |
 
-Arsip .zip untuk macOS juga tersedia di [halaman rilis](https://github.com/awahids/ringan-api/releases/tag/v1.1.1). Installer belum ditandatangani sertifikat developer: di Windows pilih *More info → Run anyway* saat SmartScreen muncul; di macOS lihat [cara membuka pertama kali](https://github.com/awahids/ringan-api#membuka-di-macos-pertama-kali).
+Arsip .zip untuk macOS juga tersedia di [halaman rilis](https://github.com/awahids/ringan-api/releases/tag/v1.2.0). Installer belum ditandatangani sertifikat developer: di Windows pilih *More info → Run anyway* saat SmartScreen muncul; di macOS lihat [cara membuka pertama kali](https://github.com/awahids/ringan-api#membuka-di-macos-pertama-kali).
 <!-- download:end -->
 
 ### Membuka di macOS pertama kali
