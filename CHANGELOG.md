@@ -7,6 +7,8 @@ Bagian **[Unreleased]** berisi perubahan yang sudah ada di kode tapi belum diril
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-26
+
 ### Ditambahkan
 - Notifikasi saat ada versi baru di GitHub Releases, lengkap dengan catatan perubahannya dan tombol unduh installer yang sesuai sistem operasi (Windows installer/portable, macOS Intel/Apple Silicon).
 - Riwayat perubahan per versi (menu **Riwayat perubahan** di sidebar dan Pengaturan), termasuk versi baru yang belum terpasang.
@@ -39,5 +41,6 @@ Rilis pertama.
 - CLI runner (`ringan run`, `ringan export`) dengan laporan JUnit/HTML/JSON untuk CI.
 - Aplikasi desktop Electron untuk Windows dan macOS; API key AI dienkripsi dengan keychain OS.
 
-[Unreleased]: https://github.com/awahids/ringan-api/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/awahids/ringan-api/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/awahids/ringan-api/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/awahids/ringan-api/releases/tag/v1.0.0

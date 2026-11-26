@@ -1,7 +1,7 @@
 {
   "name": "ringan-api",
   "productName": "Ringan API",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "API client lokal yang ringan, tanpa login. Kompatibel dengan koleksi Bruno, Postman v2.x, OpenAPI, dan cURL.",
   "author": "Ringan API",
   "main": "electron/main.js",
