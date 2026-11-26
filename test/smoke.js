@@ -326,6 +326,38 @@ const ok = (name, fn) => Promise.resolve().then(fn).then(
     assert.deepStrictEqual(col.items.find((x) => x.name === live.REMOVED_FOLDER).items.map((x) => x.name), ['Health'], 'only Health left in removed folder');
   });
 
+  await ok('updates: versions, changelog, release check', async () => {
+    const http = require('http');
+    const srv = http.createServer((q, r) => {
+      r.writeHead(200, { 'Content-Type': 'application/json' });
+      r.end(JSON.stringify([
+        { tag_name: 'v9.1.0-rc.1', prerelease: true, draft: false, body: 'rc', html_url: 'x', assets: [] },
+        { tag_name: 'v9.0.0', prerelease: false, draft: false, body: '- baru', html_url: 'https://example/v9', published_at: '2030-01-01', assets: [{ name: 'RinganAPI-Setup-9.0.0.exe', browser_download_url: 'u', size: 1 }] },
+        { tag_name: 'v0.1.0', prerelease: false, draft: false, body: 'lama', html_url: 'y', assets: [] },
+      ]));
+    });
+    await new Promise((res) => srv.listen(0, '127.0.0.1', res));
+    process.env.RINGAN_UPDATE_API = `http://127.0.0.1:${srv.address().port}`;
+    delete require.cache[require.resolve('../lib/updates')];
+    const u = require('../lib/updates');
+    try {
+      assert.ok(u.compareVersions('1.10.0', '1.9.9') > 0);
+      assert.ok(u.compareVersions('1.0.0', '1.0.0-beta.2') > 0);
+      assert.ok(u.compareVersions('v1.0.0', '1.0.0') === 0);
+      const cl = u.parseChangelog('# C\n\n## [Unreleased]\n\n## [1.2.0] - 2026-12-01\n### Ditambahkan\n- a\n\n## [1.1.0] - 2026-11-01\n- b\n\n[1.2.0]: https://x\n');
+      assert.deepStrictEqual(cl.map((e) => [e.version, e.date, e.unreleased]), [['Unreleased', null, true], ['1.2.0', '2026-12-01', false], ['1.1.0', '2026-11-01', false]]);
+      assert.ok(!cl[2].body.includes('https://x'), 'link refs stripped');
+      assert.ok(u.readChangelog().some((e) => e.version === '1.0.0'), 'bundled CHANGELOG.md readable');
+      const r = await u.check({ force: true });
+      assert.strictEqual(r.hasUpdate, true);
+      assert.strictEqual(r.latest, '9.0.0', 'prerelease ignored');
+      assert.deepStrictEqual(r.newer.map((x) => x.version), ['9.0.0']);
+      assert.strictEqual(r.kind, 'node');
+      assert.strictEqual(r.download, null, 'node version gets the release page, not an installer');
+      assert.strictEqual(r.releaseUrl, 'https://example/v9');
+    } finally { srv.close(); delete process.env.RINGAN_UPDATE_API; }
+  });
+
   // ---- sandbox worker, executed in Node with a fake `self`
   const src = fs.readFileSync(path.join(__dirname, '../public/sandbox-worker.js'), 'utf8');
   const runJob = (job) => new Promise((resolve) => {

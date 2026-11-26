@@ -18,6 +18,7 @@ const { sendHttp } = require('./lib/http');
 const fsSync = require('./lib/fs-sync');
 const liveSync = require('./lib/live-sync');
 const ai = require('./lib/ai');
+const updates = require('./lib/updates');
 const { safeName } = require('./lib/bru-writer');
 
 // Available when the server runs inside the Electron shell (native folder picker, reveal in explorer).
@@ -231,6 +232,12 @@ async function handleApi(req, res, pathname) {
       collection.fsError = null;
       return sendJson(res, 200, { collection });
     } catch (e) { return sendJson(res, 400, { error: e.message }); }
+  }
+  // ---- version, changelog & update check (GitHub Releases)
+  if (pathname === '/api/changelog' && m === 'GET') return sendJson(res, 200, { current: updates.CURRENT, repo: updates.REPO, entries: updates.readChangelog() });
+  if (pathname === '/api/update/check' && m === 'POST') {
+    const { force } = await readJson(req);
+    return sendJson(res, 200, await updates.check({ force: !!force }));
   }
   // ---- AI providers (keys stay in this process; the page only sees whether a key exists)
   if (pathname === '/api/ai/config' && m === 'GET') return sendJson(res, 200, ai.publicConfig(DATA_DIR));

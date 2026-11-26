@@ -153,6 +153,14 @@ function runSmoke(win) {
         info.ai.encryptedOnDisk = raw.includes('keyEnc');
         try { require('@anthropic-ai/sdk'); info.ai.sdkBundled = true; } catch { info.ai.sdkBundled = false; }
       }
+      if (process.env.RINGAN_UPDATE_API) {
+        info.update = await win.webContents.executeJavaScript(`(async () => {
+          const t = document.querySelector('meta[name="ringan-token"]').content;
+          const r = await fetch('/api/update/check', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Ringan-Token': t }, body: '{"force":true}' });
+          const j = await r.json();
+          return { current: j.current, latest: j.latest, hasUpdate: j.hasUpdate, kind: j.kind, download: j.download && j.download.name, error: j.error };
+        })()`);
+      }
       const out = process.env.RINGAN_SMOKE_PNG;
       if (out) fs.writeFileSync(out, (await win.webContents.capturePage()).toPNG());
       console.log('SMOKE OK ' + JSON.stringify(info));

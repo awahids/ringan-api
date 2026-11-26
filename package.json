@@ -13,7 +13,8 @@
     "dist:win": "electron-builder --win nsis portable --x64 --publish never",
     "dist:mac": "electron-builder --mac dmg zip --x64 --arm64 --publish never",
     "dist:linux": "electron-builder --linux AppImage --publish never",
-    "cli": "node bin/ringan.js"
+    "cli": "node bin/ringan.js",
+    "release": "node scripts/release.js"
   },
   "engines": {
     "node": ">=18"
@@ -35,7 +36,8 @@
       "lib/**",
       "public/**",
       "server.js",
-      "package.json"
+      "package.json",
+      "CHANGELOG.md"
     ],
     "asar": true,
     "win": {
@@ -69,5 +71,12 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.14.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/awahids/ringan-api.git"
+  },
+  "ringan": {
+    "updateRepo": "awahids/ringan-api"
   }
 }

@@ -1201,6 +1201,114 @@
     toast(`Disimpan ke koleksi "${col.name}". Nilai variabel sudah terisi (bukan {{variabel}}); auth disalin sebagai header.`);
   }
 
+  // ================================================================ updates & changelog
+  let updateInfo = null;
+  let appVersion = '';
+  let updateCardDismissed = false;
+  const platformLabel = (kind) => ({ win: 'Windows', portable: 'Windows Portable', mac: 'macOS', linux: 'Linux' }[kind] || '');
+  const fmtDate = (d) => { if (!d) return ''; const t = new Date(d); return isNaN(t) ? d : t.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }); };
+  const openExternal = (url) => { if (url) window.open(url, '_blank', 'noopener'); };
+
+  function renderVersionFoot() {
+    const b = $('#verBtn');
+    if (!b) return;
+    b.replaceChildren(`v${appVersion}`, updateInfo && updateInfo.hasUpdate ? h('span', { class: 'upd-dot', title: `Versi ${updateInfo.latest} tersedia` }) : null);
+    b.title = updateInfo && updateInfo.hasUpdate ? `Versi ${updateInfo.latest} tersedia — klik untuk melihat perubahan` : 'Riwayat perubahan';
+  }
+
+  function downloadButton(info, cls = 'btn sm primary') {
+    if (info.download) {
+      const mb = info.download.size ? ` (${(info.download.size / 1048576).toFixed(0)} MB)` : '';
+      return h('button', { class: cls, onclick: () => { openExternal(info.download.url); toast(`Mengunduh ${info.download.name}. Tutup Ringan API lalu jalankan installer untuk memperbarui; data Anda tetap aman.`); } }, `Unduh untuk ${platformLabel(info.kind)}${mb}`);
+    }
+    return h('button', { class: cls, onclick: () => openExternal(info.releaseUrl) }, 'Buka halaman rilis');
+  }
+
+  function showUpdateCard() {
+    const info = updateInfo;
+    let card = $('#updateCard');
+    if (card) card.remove();
+    if (!info || !info.hasUpdate || updateCardDismissed) return;
+    const latest = info.newer[0];
+    // First bullet points of the notes, as plain text (no headings, no markdown syntax).
+    const preview = String(latest.notes || '').split('\n').filter((l) => /^\s*[-*]\s+/.test(l))
+      .map((l) => l.replace(/^\s*[-*]\s+/, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*|__|`/g, '').trim()).filter(Boolean).slice(0, 3);
+    card = h('div', { id: 'updateCard', class: 'update-card', role: 'status' },
+      h('div', { class: 'row' }, h('span', { class: 'upd-badge' }, '↑'), h('b', null, `Versi ${latest.version} tersedia`), h('span', { class: 'muted' }, `· Anda memakai v${info.current}`),
+        h('span', { class: 'spacer' }), h('button', { class: 'icon-btn', title: 'Tutup', onclick: () => { updateCardDismissed = true; card.remove(); } }, '×')),
+      info.newer.length > 1 ? h('div', { class: 'muted' }, `${info.newer.length} versi baru sejak versi Anda.`) : null,
+      preview.length ? h('ul', { class: 'upd-preview' }, preview.map((p) => h('li', null, p))) : null,
+      info.kind === 'node' ? h('div', { class: 'help' }, 'Versi Node: perbarui dengan git pull lalu npm install, atau unduh installer desktop.') : null,
+      h('div', { class: 'row', style: { marginTop: '8px' } },
+        downloadButton(info),
+        h('button', { class: 'btn sm', onclick: () => openChangelog() }, 'Lihat perubahan'),
+        h('button', { class: 'btn sm ghost', onclick: () => { ls.set('ringan.skipVersion', latest.version); updateCardDismissed = true; card.remove(); toast(`Notifikasi untuk v${latest.version} tidak akan muncul lagi. Versi berikutnya tetap diberitahukan.`); } }, 'Lewati versi ini')));
+    document.body.append(card);
+  }
+
+  async function checkUpdates({ force = false, manual = false } = {}) {
+    if (!manual && store && store.settings.checkUpdates === false) return null;
+    try { updateInfo = await api('/api/update/check', { force }); } catch (e) { if (manual) toast(e.message, true); return null; }
+    renderVersionFoot();
+    if (manual) {
+      if (updateInfo.error) toast(`Gagal cek update: ${updateInfo.error}`, true);
+      else if (!updateInfo.hasUpdate) toast(`Anda sudah memakai versi terbaru (v${updateInfo.current}).`);
+      else { updateCardDismissed = false; showUpdateCard(); }
+    } else if (updateInfo.hasUpdate && ls.get('ringan.skipVersion') !== updateInfo.latest) showUpdateCard();
+    return updateInfo;
+  }
+
+  async function openChangelog({ focus } = {}) {
+    const m = modal('Riwayat perubahan', { wide: true });
+    m.box.classList.add('changelog');
+    const status = h('div', { class: 'row cl-status' }, h('span', { class: 'spinner sm' }), 'Memuat…');
+    const list = h('div');
+    m.body.append(status, list);
+    m.foot.append(h('button', {
+      class: 'btn', onclick: async (e) => { e.target.disabled = true; await checkUpdates({ force: true, manual: true }); e.target.disabled = false; m.close(); openChangelog(); },
+    }, 'Cek update sekarang'), h('button', { class: 'btn primary', onclick: m.close }, 'Tutup'));
+    let local;
+    try { local = await api('/api/changelog', undefined, 'GET'); } catch (e) { status.replaceChildren(h('div', { class: 'errbox' }, e.message)); return; }
+    if (!updateInfo && store.settings.checkUpdates !== false) await checkUpdates();
+    const info = updateInfo;
+    status.replaceChildren(
+      h('span', null, 'Versi terpasang: ', h('b', null, `v${local.current}`)),
+      info && info.hasUpdate ? h('span', { class: 'pill fail' }, `Versi ${info.latest} tersedia`) : info && !info.error ? h('span', { class: 'pill pass' }, 'Sudah versi terbaru') : null,
+      info && info.error ? h('span', { class: 'muted' }, `Tidak bisa cek update: ${info.error}`) : null,
+      store.settings.checkUpdates === false ? h('span', { class: 'muted' }, 'Cek update otomatis dimatikan') : null,
+      h('span', { class: 'spacer' }),
+      local.repo ? h('button', { class: 'link', onclick: () => openExternal(`https://github.com/${local.repo}/releases`) }, 'Semua rilis di GitHub') : null);
+
+    const section = (title, items) => items.length ? [h('div', { class: 'section-title' }, title), ...items] : [];
+    const card = (e, { isNew, isCurrent, unreleased } = {}) => {
+      const el = h('details', { class: 'cl-entry' + (isNew ? ' new' : '') + (isCurrent ? ' current' : ''), open: isNew || isCurrent || (focus && e.version === focus) || null, 'data-version': e.version },
+        h('summary', null,
+          h('b', null, unreleased ? 'Belum dirilis' : `v${e.version}`),
+          e.date ? h('span', { class: 'muted' }, fmtDate(e.date)) : null,
+          isNew ? h('span', { class: 'pill fail' }, 'baru') : null,
+          isCurrent ? h('span', { class: 'pill pass' }, 'terpasang') : null,
+          unreleased ? h('span', { class: 'pill' }, 'build pengembangan') : null),
+        h('div', { class: 'cl-body' }, e.body ? md(e.body) : h('p', { class: 'muted' }, 'Tidak ada catatan.'),
+          isNew && info ? h('div', { class: 'row', style: { marginTop: '8px' } }, downloadButton({ ...info, download: e.version === info.latest ? info.download : null, releaseUrl: e.url })) : null));
+      return el;
+    };
+    const newer = info && info.newer ? info.newer.map((r) => card({ version: r.version, date: r.publishedAt, body: r.notes, url: r.url }, { isNew: true })) : [];
+    const entries = local.entries.filter((e) => !(e.unreleased && !e.body));
+    const installed = entries.map((e) => card(e, { isCurrent: e.version === local.current, unreleased: e.unreleased }));
+    list.replaceChildren(...section('Versi baru yang tersedia', newer), ...section('Riwayat versi', installed));
+    if (focus) setTimeout(() => { const el = list.querySelector(`[data-version="${CSS.escape(focus)}"]`); if (el) el.scrollIntoView({ block: 'start' }); }, 0);
+  }
+
+  /** After an update, show what changed in the installed version once. */
+  function showWhatsNew() {
+    const last = ls.get('ringan.lastVersion');
+    ls.set('ringan.lastVersion', appVersion);
+    if (last && last !== appVersion) {
+      toast(`Ringan API diperbarui ke v${appVersion}.`);
+      openChangelog({ focus: appVersion });
+    }
+  }
+
   // ================================================================ AI assistant (multi-provider)
   let aiCfg = null;
   const aiThreads = {}; // request id -> [{ role, content, view }]
@@ -1282,8 +1390,19 @@
       if (i % 2 === 1) { el.append(h('pre', { class: 'body' }, part.replace(/\n$/, ''))); return; }
       if (!part.trim()) return;
       const esc = part.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/^#{1,4}\s+(.+)$/gm, '<b>$1</b>').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/`([^`\n]+)`/g, '<code>$1</code>');
-      el.append(h('div', { class: 'md-text', html: esc.trim() }));
+        .replace(/^#{1,4}\s+(.+)$/gm, '<b>$1</b>').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/`([^`\n]+)`/g, '<code>$1</code>')
+        .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)"'<>]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      // Group "- item" / "* item" lines into real lists (content is already escaped above).
+      let html = '';
+      let inList = false;
+      for (const line of esc.trim().split('\n')) {
+        const li = /^\s*[-*]\s+(.*)$/.exec(line);
+        if (li) { html += (inList ? '' : '<ul class="md-list">') + `<li>${li[1]}</li>`; inList = true; continue; }
+        if (inList) { html += '</ul>'; inList = false; }
+        html += line + '\n';
+      }
+      if (inList) html += '</ul>';
+      el.append(h('div', { class: 'md-text', html: html.replace(/\n+$/, '') }));
     });
     return el;
   }
@@ -2313,6 +2432,9 @@
       field('Verifikasi TLS', chk('verifyTls'), 'Matikan untuk server testing dengan sertifikat self-signed.'),
       field('Ikuti redirect', chk('followRedirects')),
       field('Tema', theme),
+      field('Update', h('div', { class: 'row' }, h('label', { class: 'row' }, chk('checkUpdates'), 'Cek versi baru otomatis'),
+        h('button', { class: 'btn sm', onclick: () => checkUpdates({ force: true, manual: true }) }, 'Cek sekarang'),
+        h('button', { class: 'btn sm', onclick: () => { m.close(); openChangelog(); } }, 'Riwayat perubahan')), `Versi terpasang: v${info.version || appVersion}. Pengecekan hanya membaca daftar rilis publik di GitHub.`),
       field('Asisten AI', h('button', { class: 'btn sm', onclick: () => { m.close(); openAiSettings(); } }, 'Pengaturan AI…'), 'Claude, OpenAI, Gemini, Ollama, OpenRouter, Groq, DeepSeek, atau server OpenAI-compatible.'),
       h('p', { class: 'help' }, `Data tersimpan di: ${info.dataFile || '-'}`),
       h('p', { class: 'help' }, `Ringan API ${info.version || ''} · Node ${info.node || ''}. Tidak ada login, tidak ada sinkronisasi cloud.`));
@@ -2348,10 +2470,16 @@
       $('#main').append(h('div', { class: 'empty-main' }, h('h2', null, 'Tidak bisa memuat data'), e.message));
       return;
     }
-    store.settings = Object.assign({ timeoutMs: 30000, verifyTls: true, followRedirects: true, scriptTimeoutMs: 10000, theme: 'system' }, store.settings || {});
+    store.settings = Object.assign({ timeoutMs: 30000, verifyTls: true, followRedirects: true, scriptTimeoutMs: 10000, theme: 'system', checkUpdates: true }, store.settings || {});
     store.collections = (store.collections || []).map(normCollection);
     await loadHistory();
     loadAiConfig();
+    try { appVersion = (await api('/api/info', undefined, 'GET')).version; } catch {}
+    renderVersionFoot();
+    $('#verBtn').onclick = () => openChangelog();
+    showWhatsNew();
+    setTimeout(() => checkUpdates(), 4000);
+    setInterval(() => checkUpdates(), 6 * 60 * 60 * 1000);
     if (!store.collections.length) ui.sel = null;
     if (ui.sel && !locate(ui.sel)) ui.sel = null;
     if (!ui.sel && store.collections.length && !saved.sel) {

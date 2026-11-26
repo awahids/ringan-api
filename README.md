@@ -29,6 +29,18 @@ npm run dist:mac                         # installer macOS (harus di Mac)
 **macOS lewat GitHub Actions:** push folder ini ke repo GitHub, buka tab *Actions* → *Desktop build* → *Run workflow* (atau push tag `v1.0.0`). Hasil `.dmg` (Intel & Apple Silicon) dan `.exe` muncul sebagai *artifact*.
 Build belum ditandatangani: di macOS buka pertama kali lewat klik kanan → *Open*; di Windows SmartScreen pilih *More info → Run anyway*.
 
+## Update & riwayat perubahan
+
+- Aplikasi mengecek **GitHub Releases** repo ini saat dibuka dan tiap 6 jam. Jika ada versi baru, muncul notifikasi berisi ringkasan perubahan dan tombol **Unduh** yang langsung memilih installer sesuai sistem (Windows Setup/Portable, macOS Intel/Apple Silicon). Bisa juga "Lewati versi ini" atau dimatikan di **Pengaturan → Update**.
+- Klik nomor versi di pojok kiri bawah (atau **Pengaturan → Riwayat perubahan**) untuk melihat changelog setiap versi, termasuk versi baru yang belum terpasang. Setelah update, halaman "Yang baru" muncul sekali.
+- Riwayat perubahan ditulis di [`CHANGELOG.md`](CHANGELOG.md).
+
+### Merilis versi baru
+
+1. Tulis perubahan di bagian `## [Unreleased]` pada `CHANGELOG.md` (Ditambahkan / Diubah / Diperbaiki).
+2. Jalankan `npm run release -- 1.2.0` (atau `patch` / `minor` / `major`). Skrip mengganti `[Unreleased]` menjadi versi + tanggal, menaikkan versi di `package.json`, lalu membuat commit dan tag `v1.2.0`.
+3. `git push && git push origin v1.2.0`. Workflow **Desktop build** membangun installer Windows & macOS lalu menerbitkan GitHub Release dengan catatan dari changelog. Aplikasi pengguna akan menampilkan notifikasi update.
+
 ## Versi tanpa install (Node.js)
 
 | Cara | Keterangan |
