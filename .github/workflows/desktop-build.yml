@@ -63,8 +63,11 @@ jobs:
         with:
           path: out
           merge-multiple: true
-      - name: Release notes from CHANGELOG.md
-        run: node scripts/changelog-section.js "$GITHUB_REF_NAME" > notes.md
+      - name: Release notes from CHANGELOG.md + download links
+        run: |
+          node scripts/changelog-section.js "$GITHUB_REF_NAME" > notes.md
+          printf '\n## Unduh\n\n' >> notes.md
+          node scripts/download-links.js "$GITHUB_REF_NAME" >> notes.md
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

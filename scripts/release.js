@@ -61,7 +61,19 @@ if (fs.existsSync(lockFile)) {
   fs.writeFileSync(lockFile, JSON.stringify(lock, null, 2) + '\n');
 }
 
-git('add', 'CHANGELOG.md', 'package.json', 'package-lock.json');
+// Download links in README.md point at the new version.
+const readmeFile = path.join(root, 'README.md');
+const downloads = require('./download-links');
+if (fs.existsSync(readmeFile)) {
+  const raw = fs.readFileSync(readmeFile, 'utf8');
+  const crlf = raw.includes('\r\n');
+  if (raw.includes(downloads.START)) {
+    const updated = downloads.updateBlock(raw.replace(/\r\n/g, '\n'), next);
+    fs.writeFileSync(readmeFile, crlf ? updated.replace(/\n/g, '\r\n') : updated);
+  }
+}
+
+git('add', 'CHANGELOG.md', 'package.json', 'package-lock.json', 'README.md');
 git('commit', '-m', `Rilis v${next}`);
 git('tag', '-a', `v${next}`, '-m', `Ringan API v${next}`);
 console.log(`Versi ${prev} -> ${next}. Commit dan tag v${next} dibuat.`);
